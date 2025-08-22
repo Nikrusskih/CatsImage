@@ -43,6 +43,10 @@ dependencies {
 
     implementation(libs.glide)
 
+    implementation(libs.retrofit)
+    implementation(libs.gson)
+    implementation(libs.adapterRxjava3)
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

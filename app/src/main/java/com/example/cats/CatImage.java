@@ -1,10 +1,19 @@
 package com.example.cats;
 
+import com.google.gson.annotations.SerializedName;
+
 public class CatImage {
 
+    @SerializedName("id")
     private String id;
+
+    @SerializedName("url")
     private String url;
-    private  int width;
+
+    @SerializedName("width")
+    private int width;
+
+    @SerializedName("height")
     private int height;
 
     public CatImage(String id, String url, int width, int height) {

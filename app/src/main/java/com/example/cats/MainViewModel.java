@@ -2,6 +2,7 @@ package com.example.cats;
 
 import android.app.Application;
 import android.util.Log;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.lifecycle.AndroidViewModel;
@@ -22,6 +23,7 @@ import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.disposables.CompositeDisposable;
 import io.reactivex.rxjava3.disposables.Disposable;
+import io.reactivex.rxjava3.functions.Action;
 import io.reactivex.rxjava3.functions.Consumer;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 
@@ -33,12 +35,21 @@ public class MainViewModel extends AndroidViewModel {
     private static final String HEIGHT = "height";
     private static final String TAG = "MainActivity";
     private MutableLiveData<CatImage> catImage = new MutableLiveData<>();
+    private MutableLiveData<Boolean> isLoading = new MutableLiveData<>();
+    private MutableLiveData<Boolean> isError = new MutableLiveData<>();
 
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
-
     public MainViewModel(@NonNull Application application) {
         super(application);
+    }
+
+    public LiveData<Boolean> getIsError() {
+        return isError;
+    }
+
+    public LiveData<Boolean> getIsLoading() {
+        return isLoading;
     }
 
     public LiveData<CatImage> getCatImage() {
@@ -49,6 +60,24 @@ public class MainViewModel extends AndroidViewModel {
         Disposable disposable = loadCatImageRx()
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
+                .doOnSubscribe(new Consumer<Disposable>() {
+                    @Override
+                    public void accept(Disposable disposable) throws Throwable {
+                        isLoading.setValue(true);
+                    }
+                })
+                .doAfterTerminate(new Action() {
+                    @Override
+                    public void run() throws Throwable {
+                        isLoading.setValue(false);
+                    }
+                })
+                .doOnError(new Consumer<Throwable>() {
+                    @Override
+                    public void accept(Throwable throwable) throws Throwable {
+                        isError.setValue(true);
+                    }
+                })
                 .subscribe(new Consumer<CatImage>() {
                     @Override
                     public void accept(CatImage image) throws Throwable {
@@ -57,6 +86,7 @@ public class MainViewModel extends AndroidViewModel {
                 }, new Consumer<Throwable>() {
                     @Override
                     public void accept(Throwable throwable) throws Throwable {
+                        isError.setValue(true);
                         Log.d(TAG, "Error" + throwable.getMessage());
                     }
                 });
@@ -64,38 +94,14 @@ public class MainViewModel extends AndroidViewModel {
     }
 
     private Single<CatImage> loadCatImageRx() {
-        return Single.fromCallable(new Callable<CatImage>() {
-            @Override
-            public CatImage call() throws Exception {
-                URL urlSite = new URL(BASE_URL);
-                HttpURLConnection urlConnection = (HttpURLConnection) urlSite.openConnection();
-                try {
-                    InputStream inputStream = urlConnection.getInputStream();
-                    InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-                    BufferedReader bufferedReader = new BufferedReader(inputStreamReader);
-
-                    StringBuilder data = new StringBuilder();
-                    String line;
-                    while ((line = bufferedReader.readLine()) != null) {
-                        data.append(line);
+        return ApiFactory.getApiService()
+                .loadCatImage()
+                .map(list->{
+                    if (list.isEmpty()){
+                        throw new Exception("No image found");
                     }
-                    bufferedReader.close();
-
-                    JSONArray jsonArray = new JSONArray(data.toString());
-                    if (jsonArray.length() == 0) {
-                        throw new Exception("Empty JSON array");
-                    }
-                    JSONObject jsonObject = jsonArray.getJSONObject(0);
-                    String id = jsonObject.getString(ID);
-                    String urlStr = jsonObject.getString(URL);
-                    int width = jsonObject.getInt(WIDTH);
-                    int height = jsonObject.getInt(HEIGHT);
-                    return new CatImage(id, urlStr, width, height);
-                } finally {
-                    urlConnection.disconnect();
-                }
-            }
-        });
+                    return list.get(0);
+                });
     }
 
     @Override

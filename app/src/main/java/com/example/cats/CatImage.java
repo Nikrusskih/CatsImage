@@ -14,6 +14,22 @@ public class CatImage {
         this.height = height;
     }
 
+    public String getUrl() {
+        return url;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
     @Override
     public String toString() {
         return "CatImage{" +

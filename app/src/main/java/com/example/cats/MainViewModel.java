@@ -36,6 +36,7 @@ public class MainViewModel extends AndroidViewModel {
 
     private CompositeDisposable compositeDisposable = new CompositeDisposable();
 
+
     public MainViewModel(@NonNull Application application) {
         super(application);
     }
